@@ -1,11 +1,28 @@
-import { BrowserRouter, Routes, Route, Link, useNavigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+
+// ===== ANIMATION VARIANTS =====
+const fadeInUp = {
+  hidden: { opacity: 0, y: 40 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.15 } }
+};
+
+const floatAnimation = {
+  y: [0, -10, 0],
+  transition: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+};
 
 // ===== MAIN APP =====
-export default function App() {
+function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Layout wraps all pages, child routes render inside the <Outlet /> */}
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="home" element={<Home />} />
@@ -18,38 +35,69 @@ export default function App() {
   );
 }
 
-// ===== LAYOUT (navbar + footer) =====
+// ===== LAYOUT =====
 function Layout() {
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col antialiased">
-      {/* Navbar with Modern Backdrop Blur */}
-      <nav className="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex justify-between items-center">
-          <Link to="/" className="text-2xl font-black tracking-tight text-emerald-700 flex items-center gap-2 hover:opacity-90 transition">
-            <span>🌾</span> AgriAgent
-          </Link>
-          <div className="flex gap-6 text-sm font-semibold text-slate-600">
-            <Link to="/" className="hover:text-emerald-600 transition">Home</Link>
-            <Link to="/contact" className="hover:text-emerald-600 transition">Contact</Link>
-            <Link to="/playstore" className="bg-emerald-600 text-white px-4 py-1.5 rounded-full hover:bg-emerald-700 transition shadow-sm text-xs md:text-sm">Download</Link>
-          </div>
-        </div>
-      </nav>
+  const [scrolled, setScrolled] = useState(false);
 
-      {/* Page Content - Crucial fix: using Outlet instead of re-declaring <Routes> */}
-      <main className="flex-1">
-        <Outlet />
+  useEffect(() => {
+    window.addEventListener('scroll', () => setScrolled(window.scrollY > 50));
+    return () => window.removeEventListener('scroll', () => {});
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Navbar */}
+      <motion.nav 
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.5 }}
+        className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+          scrolled ? 'bg-white/90 backdrop-blur-xl shadow-lg' : 'bg-transparent'
+        }`}
+      >
+        <div className="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+          <Link to="/" className="text-2xl font-bold flex items-center gap-2">
+            <span className="text-3xl">🌾</span>
+            <span className="gradient-text">AgriAgent</span>
+          </Link>
+          <div className="hidden md:flex gap-6 text-sm font-medium">
+            <Link to="/" className="hover:text-green-600 transition">Home</Link>
+            <Link to="/contact" className="hover:text-green-600 transition">Contact</Link>
+            <Link to="/playstore" className="hover:text-green-600 transition">Play Store</Link>
+          </div>
+          <motion.a 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            href="https://play.google.com/store/apps/details?id=com.agriagent.app" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="bg-gradient-to-r from-green-600 to-emerald-500 text-white px-5 py-2 rounded-full text-sm font-semibold hover:shadow-lg hover:shadow-green-500/30 transition"
+          >
+            📲 Download
+          </motion.a>
+        </div>
+      </motion.nav>
+
+      {/* Main Content */}
+      <main>
+        <Routes>
+          <Route index element={<Home />} />
+          <Route path="home" element={<Home />} />
+          <Route path="contact" element={<Contact />} />
+          <Route path="playstore" element={<PlayStore />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </main>
 
-      {/* Clean, Modern Footer */}
-      <footer className="bg-white text-slate-500 py-8 px-6 border-t border-slate-100 text-center">
-        <div className="max-w-6xl mx-auto space-y-2">
-          <p className="font-medium text-slate-700">© 2026 AgriAgent. Made with ❤️ for farmers</p>
-          <p className="text-sm flex flex-col sm:flex-row justify-center gap-2 sm:gap-6 text-slate-400">
-            <span>📞 +91 8897350151</span>
-            <span className="hidden sm:inline">•</span>
-            <span>✉️ siddhikreddy440@gmail.com</span>
-          </p>
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white/70 py-8 px-4">
+        <div className="max-w-6xl mx-auto text-center">
+          <p className="text-sm">© 2026 AgriAgent. Made with ❤️ for farmers</p>
+          <p className="text-xs mt-2">📞 +91 8897350151 | siddhikreddy440@gmail.com</p>
+          <div className="flex justify-center gap-4 mt-3 text-xs">
+            <a href="#" className="hover:text-white transition">Privacy Policy</a>
+            <a href="#" className="hover:text-white transition">Terms of Service</a>
+          </div>
         </div>
       </footer>
     </div>
@@ -58,101 +106,265 @@ function Layout() {
 
 // ===== HOME PAGE =====
 function Home() {
+  const features = [
+    { icon: '👷', title: 'Find Farm Labour', desc: 'GPS-based search for workers near your farm. Filter by crop type.', color: 'from-blue-500 to-cyan-400' },
+    { icon: '👔', title: 'Hire Contractors', desc: 'View verified contractor profiles with team size and experience.', color: 'from-purple-500 to-pink-400' },
+    { icon: '🚜', title: 'Rent Equipment', desc: 'Tractors, harvesters, sprayers. Compare daily rates instantly.', color: 'from-orange-500 to-yellow-400' },
+    { icon: '🥕', title: 'Sell Crops Direct', desc: 'No middlemen. Set your price and connect with buyers.', color: 'from-green-500 to-emerald-400' },
+    { icon: '💡', title: 'Community Solutions', desc: 'Post crop problems, get expert solutions from experienced farmers.', color: 'from-indigo-500 to-blue-400' },
+    { icon: '📊', title: 'Smart Farm Tools', desc: 'Income calculator, land measurement, fertilizer shop locator.', color: 'from-red-500 to-rose-400' },
+  ];
+
   return (
     <div>
       {/* Hero Section */}
-      <section className="relative pt-20 pb-24 px-6 bg-gradient-to-b from-emerald-50/60 to-slate-50 overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-100/50 rounded-full blur-3xl -z-10 translate-x-10 -translate-y-10" />
-        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12">
-          <div className="flex-1 text-center lg:text-left space-y-6">
-            <span className="inline-block bg-emerald-100 text-emerald-800 text-xs font-bold tracking-wider uppercase px-3 py-1 rounded-full">
-              Emporing Agriculture
-            </span>
-            <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-tight">
-              Farming Made <br /><span className="text-emerald-600 bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">Smarter & Faster</span>
-            </h1>
-            <p className="text-lg text-slate-600 max-w-xl mx-auto lg:mx-0">
-              Connect with local labourers, rent modern equipment, sell produce directly to buyers, and solve tricky farming issues together.
-            </p>
-            <div className="pt-2 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <a href="https://play.google.com/store/apps/details?id=com.agriagent.app" target="_blank" rel="noopener noreferrer" className="bg-slate-900 text-white font-medium px-8 py-4 rounded-2xl shadow-lg hover:bg-slate-800 transition flex items-center justify-center gap-3">
-                <span className="text-xl">📲</span> Get it on Google Play
-              </a>
-              <a href="#features" className="bg-white border border-slate-200 shadow-sm font-medium px-8 py-4 rounded-2xl text-slate-700 hover:bg-slate-50 transition text-center">
-                Explore Features ↓
-              </a>
-            </div>
-          </div>
+      <section className="min-h-screen flex items-center gradient-bg pt-20 overflow-hidden">
+        <div className="max-w-6xl mx-auto px-4 py-12 grid md:grid-cols-2 gap-12 items-center">
+          <motion.div 
+            initial="hidden"
+            animate="visible"
+            variants={staggerContainer}
+            className="space-y-6"
+          >
+            <motion.div variants={fadeInUp}>
+              <span className="inline-block px-4 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-semibold">
+                🌱 Smart Farming App
+              </span>
+            </motion.div>
+            <motion.h1 variants={fadeInUp} className="text-5xl md:text-6xl font-bold leading-tight">
+              Farming Made <br />
+              <span className="gradient-text">Smarter</span>
+            </motion.h1>
+            <motion.p variants={fadeInUp} className="text-xl text-gray-600 max-w-lg">
+              Connect with labourers, rent equipment, sell produce, and solve farming problems — all in one powerful app.
+            </motion.p>
+            <motion.div variants={fadeInUp} className="flex flex-wrap gap-4">
+              <motion.a 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                href="https://play.google.com/store/apps/details?id=com.agriagent.app" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="btn-primary flex items-center gap-2"
+              >
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3.691 2.262L14.99 9.56l-2.878 2.878-8.42-10.176zm0 19.476l8.42-10.176 2.878 2.878L3.691 21.738zM16.91 10.44l2.878 2.878-2.878 2.878L14.03 13.32l2.878-2.878z"/>
+                </svg>
+                Download Now
+              </motion.a>
+              <motion.a 
+                whileHover={{ scale: 1.05 }}
+                href="#features"
+                className="btn-secondary"
+              >
+                Learn More ↓
+              </motion.a>
+            </motion.div>
+            <motion.div variants={fadeInUp} className="flex gap-6 text-sm text-gray-500 pt-4">
+              <span>🌐 Telugu • Hindi • English</span>
+              <span>⭐ 4.5 Rating</span>
+            </motion.div>
+          </motion.div>
           
-          <div className="flex-1 flex justify-center">
-            <div className="relative group">
-              <div className="absolute inset-0 bg-emerald-600 rounded-3xl blur-xl opacity-20 group-hover:opacity-30 transition duration-500" />
-              <div className="w-56 h-56 md:w-72 md:h-72 bg-gradient-to-tr from-emerald-600 to-teal-500 rounded-3xl flex items-center justify-center text-9xl shadow-2xl relative">
+          <motion.div 
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="flex justify-center"
+          >
+            <div className="relative">
+              <motion.div 
+                animate={floatAnimation}
+                className="w-72 h-72 md:w-96 md:h-96 bg-gradient-to-br from-green-400 to-emerald-500 rounded-3xl flex items-center justify-center text-8xl shadow-2xl"
+              >
                 🌾
+              </motion.div>
+              <div className="absolute -top-4 -right-4 glass px-4 py-2 rounded-full text-sm font-semibold text-gray-700">
+                🚀 10K+ Farmers
+              </div>
+              <div className="absolute -bottom-4 -left-4 glass px-4 py-2 rounded-full text-sm font-semibold text-gray-700">
+                ⭐ 4.5/5
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Stats Dashboard Style */}
-      <section className="bg-white border-y border-slate-100 py-10 px-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
+      {/* Stats Section */}
+      <section className="py-12 px-4 bg-gradient-to-r from-green-700 to-emerald-600">
+        <motion.div 
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center text-white"
+        >
           {[
-            { metric: '10K+', label: 'Active Farmers' },
-            { metric: '500+', label: 'Equipment Listings' },
-            { metric: '50+ ', label: 'Partner Shops' },
-            { metric: '⭐ 4.5', label: 'Play Store Rating' }
-          ].map((stat, idx) => (
-            <div key={idx} className="text-center space-y-1 border-r last:border-r-0 border-slate-100">
-              <div className="text-3xl md:text-4xl font-black text-emerald-600">{stat.metric}</div>
-              <div className="text-xs md:text-sm font-medium text-slate-500 uppercase tracking-wider">{stat.label}</div>
-            </div>
+            { number: '10K+', label: 'Farmers' },
+            { number: '500+', label: 'Equipment Listings' },
+            { number: '50+', label: 'Fertilizer Shops' },
+            { number: '⭐4.5', label: 'User Rating' },
+          ].map((stat, i) => (
+            <motion.div 
+              key={i}
+              whileHover={{ scale: 1.05 }}
+              className="space-y-1"
+            >
+              <div className="text-3xl md:text-4xl font-bold">{stat.number}</div>
+              <div className="text-sm opacity-80">{stat.label}</div>
+            </motion.div>
           ))}
+        </motion.div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="py-20 px-4">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-16"
+          >
+            <span className="inline-block px-4 py-1.5 bg-green-100 text-green-700 rounded-full text-sm font-semibold mb-4">
+              Features
+            </span>
+            <h2 className="text-4xl md:text-5xl font-bold">
+              Everything You Need, <br />
+              <span className="gradient-text">One App</span>
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto mt-4">
+              From finding labour to selling crops — AgriAgent has all the tools you need.
+            </p>
+          </motion.div>
+
+          <motion.div 
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            {features.map((f, i) => (
+              <motion.div
+                key={i}
+                variants={fadeInUp}
+                whileHover={{ y: -8 }}
+                className="group relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100/50"
+              >
+                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${f.color} rounded-t-2xl`} />
+                <div className="text-5xl mb-4">{f.icon}</div>
+                <h3 className="text-xl font-bold text-gray-800 mb-2">{f.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{f.desc}</p>
+                <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="text-green-500 text-xl">→</span>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section id="features" className="py-24 px-6 bg-slate-50">
+      {/* Tools Section */}
+      <section className="py-20 px-4 bg-gray-50">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-              Everything You Need, <span className="text-emerald-600">One Single App</span>
-            </h2>
-            <p className="text-slate-500">Built ground-up to streamline workflow, maximize crop yields, and cut down overhead costs.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <span className="inline-block px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold mb-4">
+              Tools
+            </span>
+            <h2 className="text-4xl font-bold">🛠️ Smart Farm Tools</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto mt-4">
+              Practical tools to help you make better farming decisions.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-6">
             {[
-              { icon: '👷', title: 'Find Farm Labour', desc: 'Instant GPS search for available, reliable workforce groups right around your vicinity.' },
-              { icon: '👔', title: 'Hire Contractors', desc: 'Browse comprehensively verified contractor portfolios containing team counts and user history.' },
-              { icon: '🚜', title: 'Rent Equipment', desc: 'Tractors, heavy harvesters, or field sprayers. Contrast rates side by side instantly.' },
-              { icon: '🥕', title: 'Sell Crops Direct', desc: 'Bypass standard middleman fees entirely. Form your target price and connect directly with final buyers.' },
-              { icon: '💡', title: 'Community Solutions', desc: 'Take photos of plant pests or field issues, upload them, and secure crowd-sourced expert advice.' },
-              { icon: '📊', title: 'Farm Tool Suite', desc: 'Integrate tools like income micro-calculators, digital land area estimators, and local shop directories.' },
-            ].map((f, i) => (
-              <div key={i} className="bg-white p-8 rounded-2xl border border-slate-100 hover:border-emerald-200 shadow-sm hover:shadow-md transition duration-300 flex flex-col justify-between">
-                <div>
-                  <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center text-2xl mb-5">{f.icon}</div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">{f.title}</h3>
-                  <p className="text-slate-600 text-sm leading-relaxed">{f.desc}</p>
+              { icon: '💰', title: 'Income Calculator', desc: 'Estimate crop income based on current market prices', color: 'from-yellow-500 to-orange-400' },
+              { icon: '📏', title: 'Land Area Calculator', desc: 'Measure your farm area using GPS technology', color: 'from-blue-500 to-cyan-400' },
+              { icon: '🏪', title: 'Shop Locator', desc: 'Find nearby fertilizer and pesticide shops', color: 'from-purple-500 to-pink-400' },
+            ].map((tool, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                whileHover={{ scale: 1.03 }}
+                className="glass p-6 rounded-2xl text-center"
+              >
+                <div className={`text-5xl mb-3 inline-block bg-gradient-to-r ${tool.color} p-4 rounded-2xl`}>
+                  {tool.icon}
                 </div>
-              </div>
+                <h4 className="text-lg font-bold text-gray-800">{tool.title}</h4>
+                <p className="text-gray-600 text-sm mt-1">{tool.desc}</p>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Big Impact CTA */}
-      <section className="py-20 px-6 bg-slate-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
-        <div className="max-w-4xl mx-auto text-center relative z-10 space-y-6">
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight">Ready to Transform Your Farm?</h2>
-          <p className="text-slate-400 text-lg max-w-xl mx-auto">Download AgriAgent today and gain a modern, tech-driven edge on every acre.</p>
-          <div className="pt-4">
-            <a href="https://play.google.com/store/apps/details?id=com.agriagent.app" target="_blank" rel="noopener noreferrer" className="inline-block bg-emerald-600 text-white font-bold px-8 py-4 rounded-xl hover:bg-emerald-500 transition shadow-lg shadow-emerald-900/30">
-              📲 Download Free for Android
-            </a>
-          </div>
+      {/* Language & Trust */}
+      <section className="py-16 px-4">
+        <div className="max-w-6xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100"
+          >
+            <h3 className="text-2xl font-bold text-gray-800">🌐 Available in Your Language</h3>
+            <div className="flex flex-wrap justify-center gap-3 mt-4">
+              <span className="px-5 py-2 bg-green-100 text-green-700 rounded-full font-medium">తెలుగు</span>
+              <span className="px-5 py-2 bg-green-100 text-green-700 rounded-full font-medium">हिन्दी</span>
+              <span className="px-5 py-2 bg-green-100 text-green-700 rounded-full font-medium">English</span>
+            </div>
+            <div className="mt-6 flex flex-wrap justify-center gap-6 text-sm text-gray-600">
+              <span>🔒 Encrypted & Secure</span>
+              <span>📱 100% Independent App</span>
+              <span>🗑️ Delete Account Anytime</span>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 px-4 bg-gradient-to-r from-green-700 to-emerald-600">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="max-w-3xl mx-auto text-center text-white"
+        >
+          <h2 className="text-4xl md:text-5xl font-bold">Ready to Transform Your Farming?</h2>
+          <p className="text-xl mt-4 opacity-90">
+            Join 10,000+ farmers already using AgriAgent.
+          </p>
+          <motion.a
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            href="https://play.google.com/store/apps/details?id=com.agriagent.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-8 bg-white text-green-700 px-10 py-4 rounded-2xl text-lg font-bold hover:shadow-2xl transition"
+          >
+            📲 Download Now — It's Free!
+          </motion.a>
+          <p className="text-sm opacity-75 mt-4">Available on Google Play Store</p>
+        </motion.div>
+      </section>
+
+      {/* Disclaimer */}
+      <section className="py-8 px-4 bg-gray-100 border-t border-gray-200">
+        <div className="max-w-4xl mx-auto text-xs text-gray-500">
+          <p className="font-semibold text-gray-700">⚠️ Important Disclaimer</p>
+          <p className="mt-1">
+            AgriAgent is an independent private app — not affiliated with any government agency. 
+            Income calculator prices are reference prices based on public market information.
+          </p>
         </div>
       </section>
     </div>
@@ -162,121 +374,110 @@ function Home() {
 // ===== CONTACT PAGE =====
 function Contact() {
   return (
-    <section className="py-20 px-6 max-w-4xl mx-auto">
-      <div className="text-center max-w-xl mx-auto mb-12">
-        <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900">Let's Stay Connected</h1>
-        <p className="text-slate-500 mt-2">Have inquiries, technical feedback, or partnership options? Reach out immediately.</p>
-      </div>
-
-      <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 grid md:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-slate-50 rounded-xl text-xl">📱</div>
-            <div>
-              <h3 className="font-bold text-slate-800">Phone Support</h3>
-              <p className="text-slate-600 mt-0.5"><a href="tel:+918897350151" className="text-emerald-600 font-medium hover:underline">+91 8897350151</a></p>
-            </div>
-          </div>
+    <section className="min-h-[80vh] flex items-center py-20 px-4 gradient-bg">
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="max-w-3xl mx-auto w-full"
+      >
+        <div className="bg-white/80 backdrop-blur-lg p-8 md:p-12 rounded-3xl shadow-2xl border border-white/20">
+          <h1 className="text-4xl font-bold text-gray-800 mb-6">📞 Get in Touch</h1>
+          <p className="text-gray-600 mb-8">We're here to help! Reach out to us anytime.</p>
           
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-slate-50 rounded-xl text-xl">✉️</div>
-            <div>
-              <h3 className="font-bold text-slate-800">Email Address</h3>
-              <p className="text-slate-600 mt-0.5"><a href="mailto:siddhikreddy440@gmail.com" className="text-emerald-600 font-medium hover:underline">siddhikreddy440@gmail.com</a></p>
+          <div className="space-y-6">
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+              <div className="text-3xl">📱</div>
+              <div>
+                <h3 className="font-bold text-gray-700">Phone</h3>
+                <a href="tel:+918897350151" className="text-green-600 hover:underline">+91 8897350151</a>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+              <div className="text-3xl">✉️</div>
+              <div>
+                <h3 className="font-bold text-gray-700">Email</h3>
+                <a href="mailto:siddhikreddy440@gmail.com" className="text-green-600 hover:underline">siddhikreddy440@gmail.com</a>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl">
+              <div className="text-3xl">👨‍💻</div>
+              <div>
+                <h3 className="font-bold text-gray-700">Developer</h3>
+                <p className="text-gray-600">SIDDHIK REDDY ERAMMA</p>
+              </div>
             </div>
           </div>
 
-          <div className="flex items-start gap-4">
-            <div className="p-3 bg-slate-50 rounded-xl text-xl">📍</div>
-            <div>
-              <h3 className="font-bold text-slate-800">Developer Agency</h3>
-              <p className="text-slate-600 mt-0.5 font-medium text-sm">SIDDHIK REDDY ERAMMA<br /><span className="text-slate-400 font-normal">India</span></p>
-            </div>
-          </div>
+          <Link to="/" className="inline-block mt-8 text-green-600 hover:underline">
+            ← Back to Home
+          </Link>
         </div>
-
-        <div className="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100/60 flex flex-col justify-center">
-          <h3 className="font-bold text-emerald-900 mb-2 text-lg">🌐 Regional Language Support</h3>
-          <p className="text-emerald-800 text-sm mb-4 leading-relaxed">Our service networks communicate fluently inside localized channels across multiple dialects:</p>
-          <div className="flex flex-wrap gap-2">
-            {['తెలుగు', 'हिन्दी', 'English'].map((lang, idx) => (
-              <span key={idx} className="bg-white border border-emerald-200/60 px-3 py-1 text-emerald-800 font-semibold rounded-lg text-xs shadow-xs">
-                {lang}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
 
 // ===== PLAYSTORE PAGE =====
 function PlayStore() {
-  const handleDownload = () => {
-    window.open('https://play.google.com/store/apps/details?id=com.agriagent.app', '_blank');
-  };
-
   return (
-    <section className="py-20 px-6 max-w-xl mx-auto text-center">
-      <div className="bg-white p-10 rounded-3xl shadow-sm border border-slate-100 space-y-8">
-        <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-3xl flex items-center justify-center text-4xl mx-auto shadow-inner">
-          🤖
-        </div>
-        <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Get AgriAgent App</h1>
-          <p className="text-slate-500 text-sm max-w-xs mx-auto">Safe, encrypted deployment directly sourced from official Google channels.</p>
-        </div>
-        
-        <button 
-          onClick={handleDownload}
-          className="bg-slate-950 text-white w-full py-4 rounded-2xl font-bold hover:bg-slate-900 transition flex items-center justify-center gap-3 shadow-md"
-        >
-          <span>📥 Install From Google Play</span>
-        </button>
+    <section className="min-h-[80vh] flex items-center py-20 px-4 gradient-bg">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-2xl mx-auto w-full"
+      >
+        <div className="bg-white/80 backdrop-blur-lg p-8 md:p-12 rounded-3xl shadow-2xl border border-white/20 text-center">
+          <div className="text-8xl mb-6">📱</div>
+          <h1 className="text-4xl font-bold text-gray-800 mb-3">Download AgriAgent</h1>
+          <p className="text-gray-600 mb-8">Get the app on Google Play Store</p>
+          
+          <motion.a
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            href="https://play.google.com/store/apps/details?id=com.agriagent.app"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-3 bg-black text-white px-8 py-4 rounded-2xl text-lg font-semibold hover:bg-gray-800 transition shadow-xl"
+          >
+            <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3.691 2.262L14.99 9.56l-2.878 2.878-8.42-10.176zm0 19.476l8.42-10.176 2.878 2.878L3.691 21.738zM16.91 10.44l2.878 2.878-2.878 2.878L14.03 13.32l2.878-2.878z"/>
+            </svg>
+            Get it on Google Play
+          </motion.a>
 
-        <div className="text-left text-xs text-slate-500 bg-slate-50 p-5 rounded-2xl border border-slate-100 space-y-2">
-          <p className="font-bold text-slate-700 text-sm mb-1 flex items-center gap-1.5">📋 Technical Metrics</p>
-          <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
-            <span className="text-slate-400">Package Identifier</span>
-            <code className="bg-slate-200/70 px-1.5 py-0.5 rounded text-slate-700 font-mono">com.agriagent.app</code>
+          <div className="mt-8 text-left text-sm text-gray-500 bg-gray-50 p-4 rounded-xl">
+            <p className="font-semibold text-gray-700">📋 App Details</p>
+            <p className="mt-1">• Package: <code className="bg-gray-200 px-1 rounded">com.agriagent.app</code></p>
+            <p>• Developer: SIDDHIK REDDY ERAMMA</p>
+            <p>• Updated: July 2026</p>
           </div>
-          <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
-            <span className="text-slate-400">Deployment Head</span>
-            <span>SIDDHIK REDDY ERAMMA</span>
-          </div>
-          <div className="flex justify-between border-b border-slate-200/60 pb-1.5">
-            <span className="text-slate-400">Latest Revision</span>
-            <span>July 2026</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-400">Package Footprint</span>
-            <span>~25 Megabytes</span>
-          </div>
-        </div>
 
-        <div>
-          <Link to="/" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 transition">
-            ← Return back to Main Home
+          <Link to="/" className="inline-block mt-6 text-green-600 hover:underline">
+            ← Back to Home
           </Link>
         </div>
-      </div>
+      </motion.div>
     </section>
   );
 }
 
-// ===== 404 NOT FOUND =====
+// ===== 404 =====
 function NotFound() {
   return (
-    <section className="py-28 px-6 text-center max-w-md mx-auto space-y-4">
-      <h1 className="text-7xl font-black text-slate-200 select-none">404</h1>
-      <h2 className="text-2xl font-bold text-slate-800">Target location missing</h2>
-      <p className="text-slate-500 text-sm">The digital link you requested doesn't exist or was removed.</p>
-      <div className="pt-2">
-        <Link to="/" className="inline-block bg-slate-900 text-white text-sm font-semibold px-6 py-2.5 rounded-xl hover:bg-slate-800 transition shadow-sm">
-          ← Safely Return Home
+    <section className="min-h-[80vh] flex items-center justify-center py-20 px-4 gradient-bg">
+      <div className="text-center">
+        <h1 className="text-8xl font-bold text-gray-300">404</h1>
+        <p className="text-2xl text-gray-600 mt-4">Oops! Page not found.</p>
+        <Link to="/" className="inline-block mt-6 text-green-600 hover:underline font-medium">
+          ← Go Home
         </Link>
       </div>
     </section>
   );
 }
+
+export default App;
